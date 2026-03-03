@@ -1,10 +1,11 @@
 import streamlit as st
 from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
 from langchain_community.vectorstores import Qdrant
-from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain.chains import RetrievalQA
+from langchain_text_splitters import RecursiveCharacterTextSplitter  # Corrigé précédemment
+from langchain.chains.retrieval_qa.base import RetrievalQA           # Version stable pour ton code
 from langchain_community.document_loaders import PyPDFLoader
 import qdrant_client
+import os
 
 # 1. INIT & SÉCURITÉ
 st.set_page_config(page_title="UniBot RAG", layout="wide")
