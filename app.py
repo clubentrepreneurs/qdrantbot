@@ -1,102 +1,67 @@
 import streamlit as st
 import google.generativeai as genai
 from pypdf import PdfReader
-import os
 
-# --- 1. CONFIGURATION ---
-st.set_page_config(page_title="Assistant Étudiant Ultra-Stable", layout="wide")
+# 1. CONFIGURATION INTERFACE
+st.set_page_config(page_title="Assistant Étudiant", layout="wide")
+st.title("🎓 Assistant de Cours")
 
-try:
-    if "GEMINI_API_KEY" in st.secrets:
-        GEMINI_KEY = st.secrets["GEMINI_API_KEY"]
-        genai.configure(api_key=GEMINI_KEY)
-    else:
-        st.error("⚠️ Clé API non trouvée dans les Secrets Streamlit (GEMINI_API_KEY).")
-        st.stop()
-except Exception as e:
-    st.error(f"Erreur de configuration : {e}")
+# 2. CONFIGURATION API
+# On récupère la clé et on configure Google immédiatement
+if "GEMINI_API_KEY" not in st.secrets:
+    st.error("❌ Erreur : La clé 'GEMINI_API_KEY' est absente des Secrets Streamlit.")
     st.stop()
 
-# --- 2. INITIALISATION DU MODÈLE ---
-@st.cache_resource
-def load_stable_model():
-    model_names = [
-        'models/gemini-1.5-flash', 
-        'gemini-1.5-flash', 
-        'models/gemini-pro',
-        'gemini-pro'
-    ]
-    for name in model_names:
-        try:
-            m = genai.GenerativeModel(name)
-            # Test de connexion ultra-rapide
-            m.generate_content("test", generation_config={"max_output_tokens": 1})
-            return m
-        except:
-            continue
-    return None
+genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
 
-model = load_stable_model()
+# On force le modèle le plus commun
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-if model is None:
-    st.error("❌ Impossible de contacter Gemini. Vérifie ta clé API ou ta connexion.")
-    st.stop()
-
-# --- 3. INTERFACE ---
-st.title("🎓 Assistant de Cours (Version Stable)")
-
+# 3. GESTION DU DOCUMENT (BARRE LATÉRALE)
 with st.sidebar:
     st.header("📁 Documents")
-    uploaded_file = st.file_uploader("Uploader ton cours (PDF)", type="pdf")
+    uploaded_file = st.file_uploader("Uploader un PDF", type="pdf")
     
     if uploaded_file:
-        with st.spinner("Lecture du PDF..."):
-            try:
-                reader = PdfReader(uploaded_file)
-                text_content = ""
-                for page in reader.pages:
-                    text_content += page.extract_text()
-                st.session_state['cours_texte'] = text_content
-                st.success("Cours chargé avec succès !")
-            except Exception as e:
-                st.error(f"Erreur lors de la lecture du PDF : {e}")
+        reader = PdfReader(uploaded_file)
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() + "\n"
+        st.session_state['document_text'] = text
+        st.success("✅ Document chargé !")
 
-# --- 4. GESTION DU CHAT ---
+# 4. GESTION DU CHAT
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
-# Affichage des messages précédents
+# Afficher l'historique
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
 # Zone de saisie
-if prompt := st.chat_input("Pose ta question sur le cours..."):
-    # On ajoute la question de l'utilisateur
+if prompt := st.chat_input("Pose ta question..."):
+    # Ajouter le message utilisateur
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     # Réponse de l'IA
     with st.chat_message("assistant"):
-        if 'cours_texte' not in st.session_state:
-            st.warning("Veuillez d'abord uploader un PDF dans la barre latérale.")
+        if 'document_text' not in st.session_state:
+            st.warning("Veuillez d'abord uploader un PDF.")
         else:
             try:
-                with st.spinner("L'IA réfléchit..."):
-                    # On limite le contexte pour rester dans les clous de l'API
-                    contexte = st.session_state['cours_texte'][:40000]
-                    
-                    instruction = f"""Tu es un tuteur académique. Utilise le texte du cours pour répondre.
-                    
-                    TEXTE DU COURS :
-                    {contexte}
-                    
-                    QUESTION :
-                    {prompt}"""
-                    
-                    response = model.generate_content(instruction)
-                    st.markdown(response.text)
-                    st.session_state.messages.append({"role": "assistant", "content": response.text})
+                # Création du contexte
+                context = st.session_state['document_text'][:30000] # Limite à ~20 pages
+                full_prompt = f"Voici un cours : {context}\n\nQuestion : {prompt}"
+                
+                # Appel direct à Google
+                response = model.generate_content(full_prompt)
+                
+                # Affichage et sauvegarde
+                st.markdown(response.text)
+                st.session_state.messages.append({"role": "assistant", "content": response.text})
             except Exception as e:
-                st.error(f"Désolé, une erreur est survenue lors de la génération : {e}")
+                # Ici, on affiche l'erreur BRUTE pour comprendre le blocage
+                st.error(f"Erreur Google : {str(e)}")
