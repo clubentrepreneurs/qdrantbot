@@ -7,12 +7,16 @@ import os
 st.set_page_config(page_title="Assistant Université 2026", layout="wide")
 st.title("🎓 Chatbot des Étudiants")
 
-# --- STYLE CSS POUR CACHER LE MENU ET LE LOGO ---
+# --- STYLE CSS AVANCÉ ---
 hide_st_style = """
             <style>
             #MainMenu {visibility: hidden;}
             footer {visibility: hidden;}
             header {visibility: hidden;}
+            /* Cache le bouton 'Deploy' et le menu en haut */
+            .stAppDeployButton {display:none;}
+            /* Cache l'ancre Streamlit en bas à droite sur certains navigateurs */
+            .viewerBadge_container__1QSob {display:none !important;}
             </style>
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
