@@ -6,19 +6,22 @@ import os
 # --- 1. CONFIGURATION ---
 st.set_page_config(page_title="Assistant Université 2026", layout="wide", page_icon="🎓")
 
-# --- STYLE CSS (Tentative de masquage total) ---
+# --- STYLE CSS AJUSTÉ (Cible uniquement les éléments Streamlit, pas ton titre) ---
 hide_style = """
     <style>
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
     .stDeployButton {display:none;}
-    [data-testid="stStatusWidget"] {visibility: hidden;}
-    /* Masquage du logo Streamlit en bas à droite sur mobile */
-    img[alt="Streamlit logo"] {display: none;}
+    [data-testid="stDecoration"] {display:none;} /* Enlève la ligne colorée en haut */
+    [data-testid="stHeader"] {background: rgba(0,0,0,0); pointer-events: none;} /* Rend le header invisible mais garde l'espace */
+    [data-testid="stToolbar"] {visibility: hidden;}
     </style>
     """
 st.markdown(hide_style, unsafe_allow_html=True)
+
+# Ton titre (on peut aussi le styliser un peu plus pour qu'il claque)
+st.markdown("<h1 style='text-align: center;'>🎓 Assistant Officiel des Étudiants</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align: center; color: gray;'>Session 2026 - Guide des Candidatures</p>", unsafe_allow_html=True)
 
 if "MISTRAL_API_KEY" not in st.secrets:
     st.error("❌ MISTRAL_API_KEY manquante.")
@@ -38,7 +41,9 @@ def charger_donnees(file_path):
             nb_pages = len(reader.pages)
             text = ""
             for page in reader.pages:
-                text += page.extract_text() + "\n"
+                content = page.extract_text()
+                if content:
+                    text += content + "\n"
             return text, nb_pages
         except:
             return None, 0
@@ -51,16 +56,15 @@ with st.sidebar:
     st.title("📂 Source Officielle")
     
     if texte_universite:
-        # On affiche une jolie boîte avec les infos du doc
-        st.success(f"✅ **Document :** {PDF_PERMANENT}")
-        st.caption(f"📄 Taille : {pages_totales} pages analysées")
+        st.success(f"**Fichier :** {PDF_PERMANENT}")
+        st.info(f"📄 **{pages_totales} pages** prêtes à être analysées.")
         st.write("---")
     else:
-        st.error("❌ Document source introuvable.")
+        st.error("❌ Fichier source absent.")
 
     st.header("⚙️ Réglages IA")
-    temp = st.slider("Créativité", 0.0, 1.0, 0.2)
-    max_t = st.number_input("Longueur max", 100, 2000, 600)
+    temp = st.slider("Précision / Créativité", 0.0, 1.0, 0.2)
+    max_t = st.number_input("Longueur max réponse", 100, 2000, 600)
     
     if st.button("🗑️ Nouvelle conversation"):
         st.session_state.messages = []
@@ -74,32 +78,26 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-if prompt := st.chat_input("Posez votre question sur le guide de candidature..."):
+if prompt := st.chat_input("Posez votre question ici..."):
     st.session_state.messages.append({"role": "user", "content": prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
     with st.chat_message("assistant"):
         if not texte_universite:
-            st.error("Je ne peux pas répondre sans le document source.")
+            st.error("Document source manquant.")
         else:
             try:
                 with st.spinner("Recherche dans le document..."):
-                    # On envoie un extrait suffisant (environ 15-20 pages)
                     contexte = texte_universite[:45000]
                     
-                    system_prompt = f"""Tu es l'assistant officiel de l'université. 
-                    Réponds UNIQUEMENT en te basant sur le document suivant : {PDF_PERMANENT}.
-                    Si la réponse n'est pas dedans, dis que tu ne sais pas.
-                    
-                    DOCUMENT :
-                    {contexte}"""
+                    system_prompt = f"Tu es l'assistant de l'université. Réponds en utilisant : {PDF_PERMANENT}."
                     
                     response = client.chat.complete(
                         model=MODEL,
                         messages=[
                             {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": prompt}
+                            {"role": "user", "content": f"Contexte: {contexte}\n\nQuestion: {prompt}"}
                         ],
                         temperature=temp,
                         max_tokens=max_t
