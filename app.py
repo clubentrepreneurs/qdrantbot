@@ -7,6 +7,16 @@ import os
 st.set_page_config(page_title="Assistant Université 2026", layout="wide")
 st.title("🎓 Chatbot des Étudiants")
 
+# --- STYLE CSS POUR CACHER LE MENU ET LE LOGO ---
+hide_st_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_st_style, unsafe_allow_html=True)
+
 # Sécurité Clé API
 if "MISTRAL_API_KEY" not in st.secrets:
     st.error("❌ MISTRAL_API_KEY manquante dans les Secrets.")
