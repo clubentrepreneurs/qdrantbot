@@ -6,7 +6,7 @@ import os
 # --- 1. CONFIGURATION ---
 st.set_page_config(page_title="Assistant Université 2026", layout="wide", page_icon="🎓")
 
-# --- STYLE CSS (Masquage GitHub, Fork et Header) ---
+# --- STYLE CSS (Masquage total du header Streamlit) ---
 hide_style = """
     <style>
     header {visibility: hidden !important;}
@@ -15,7 +15,7 @@ hide_style = """
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden !important;}
     .block-container {
-        padding-top: 1rem;
+        padding-top: 2rem; /* Un peu d'espace en haut pour respirer */
         padding-bottom: 0rem;
     }
     .stDeployButton {display:none;}
@@ -23,14 +23,14 @@ hide_style = """
     """
 st.markdown(hide_style, unsafe_allow_html=True)
 
-# --- TITRE ---
-st.markdown("<h1 style='text-align: center; margin-top: -50px;'>🎓 Assistant Officiel des Étudiants</h1>", unsafe_allow_html=True)
+# --- TITRE POSITIONNÉ ---
+st.markdown("<h1 style='text-align: center; margin-top: 0px;'>🎓 Assistant Officiel des Étudiants</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: gray;'>Session 2026 - Guide des Candidatures</p>", unsafe_allow_html=True)
 st.write("---")
 
 # --- SÉCURITÉ API ---
 if "MISTRAL_API_KEY" not in st.secrets:
-    st.error("❌ MISTRAL_API_KEY manquante dans les Secrets Streamlit.")
+    st.error("❌ MISTRAL_API_KEY manquante dans les Secrets.")
     st.stop()
 
 client = Mistral(api_key=st.secrets["MISTRAL_API_KEY"])
@@ -95,7 +95,7 @@ if prompt := st.chat_input("Posez votre question..."):
             try:
                 with st.spinner("Analyse du document..."):
                     contexte = texte_universite[:45000]
-                    system_prompt = f"Tu es l'assistant de l'université. Réponds en utilisant : {PDF_PERMANENT}."
+                    system_prompt = "Tu es l'assistant de l'université. Réponds de manière claire et polie."
                     
                     response = client.chat.complete(
                         model=MODEL,
