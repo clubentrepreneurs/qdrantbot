@@ -27,7 +27,7 @@ hide_style = """
 st.markdown(hide_style, unsafe_allow_html=True)
 
 # Ton titre (on peut aussi le styliser un peu plus pour qu'il claque)
-st.markdown("<h1 style='text-align: center;'>🎓 Assistant Officiel des Étudiants</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center;'>Chatbot des Étudiants</h1>", unsafe_allow_html=True)
 st.markdown("<p style='text-align: center; color: gray;'>Session 2026 - Guide des Candidatures</p>", unsafe_allow_html=True)
 
 if "MISTRAL_API_KEY" not in st.secrets:
